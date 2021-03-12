@@ -1,0 +1,59 @@
+﻿#pragma kernel Initialize
+#pragma kernel Update
+#pragma kernel Emit
+
+#include "Assets/Common/Random.cginc"
+
+struct particle
+{
+    float3 position;
+    float3 velocity;
+    float  duration;
+};
+
+RWStructuredBuffer<particle>  _ParticleBuffer;
+ConsumeStructuredBuffer<uint> _PooledParticleBuffer;
+AppendStructuredBuffer<uint>  _DeadParticleBuffer;
+
+float  _DeltaTime;
+float3 _ParticleEmitPosition;
+float  _ParticleEmitDuration;
+
+[numthreads(8, 1, 1)]
+void Initialize(uint3 id : SV_DispatchThreadID)
+{
+    _DeadParticleBuffer.Append(id.x);
+}
+
+[numthreads(8, 1, 1)]
+void Update(uint3 id : SV_DispatchThreadID)
+{
+    particle p = _ParticleBuffer[id.x];
+
+    if (p.duration > 0)
+    {
+        p.position += p.velocity * _DeltaTime;
+        p.duration -= _DeltaTime;
+
+        _ParticleBuffer[id.x] = p;
+
+        if (p.duration <= 0)
+        {
+            _DeadParticleBuffer.Append(id.x);
+        }
+    }
+}
+
+[numthreads(8, 1, 1)]
+void Emit()
+{
+    uint id = _PooledParticleBuffer.Consume();
+
+    particle p = _ParticleBuffer[id];
+
+    p.position = _ParticleEmitPosition;
+    p.velocity = normalize(random3(id) - 0.5);
+    p.duration = _ParticleEmitDuration;
+
+    _ParticleBuffer[id] = p;
+}

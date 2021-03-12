@@ -1,0 +1,21 @@
+﻿#pragma kernel UpdateParticles
+
+struct particle
+{
+    float3 position;
+    float3 velocity;
+    float4 color;
+};
+
+RWStructuredBuffer<particle> _ParticleBuffer;
+float                        _DeltaTime;
+
+[numthreads(100, 1, 1)]
+void UpdateParticles(uint3 id : SV_DispatchThreadID)
+{
+    particle p = _ParticleBuffer[id.x];
+
+    p.position += p.velocity * _DeltaTime;
+
+    _ParticleBuffer[id.x] = p;
+}

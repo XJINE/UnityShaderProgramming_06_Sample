@@ -1,0 +1,18 @@
+﻿#pragma kernel KernelA
+#pragma kernel KernelB
+
+RWStructuredBuffer<int> _Buffer;
+int                     _Value;
+
+[numthreads(4, 1, 1)]
+void KernelA(uint3 groupID       : SV_GroupID,
+             uint3 groupThreadID : SV_GroupThreadID)
+{
+    _Buffer[groupThreadID.x] = groupThreadID.x * _Value;
+}
+
+[numthreads(4, 1, 1)]
+void KernelB(uint3 groupThreadID : SV_GroupThreadID)
+{
+    _Buffer[groupThreadID.x] += 1;
+}
